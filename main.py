@@ -15,7 +15,6 @@ from torch.autograd import Variable
 from env_wrapper import atari_wrapper
 import tools as tl
 from scipy.misc import imresize, imsave
-import plot_images_together
 
 parser = argparse.ArgumentParser(description='integrated-gradients')
 parser.add_argument('--cuda', action='store_true', help='if use the cuda to do the accelartion')
@@ -213,5 +212,4 @@ if __name__ == '__main__':
     attributions = random_baseline_integrated_gradients(img, model, calculate_outputs_and_gradients_steps, original_image_x, steps=50, num_random_trials=1, cuda=args.cuda)
     img_integrated_gradient_overlay = visualize(attributions, img.reshape(80, 80, 1), overlay=True, mask_mode=True)
     img_integrated_gradient = visualize(attributions, img.reshape(80, 80, 1), overlay=False)
-    output_img = generate_entrie_images(img.reshape(80, 80, 1), img_integrated_gradient, img_integrated_gradient_overlay)
-    plot_images_together.plot_grads("./results/atari/frame0198/blank_baseline/")
+    output_img = generate_entrie_images(img.reshape(80, 80, 1), img_integrated_gradient, img_integrated_gradient_overlay, original_image_x)

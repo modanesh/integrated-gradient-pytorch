@@ -52,13 +52,13 @@ def pre_processing(obs, cuda):
     return obs_tensor
 
 # generate the entire images
-def generate_entrie_images(img_origin, img_integrad, img_integrad_overlay):
+def generate_entrie_images(img_origin, img_integrad, img_integrad_overlay, bit_values):
     imsave('results/atari/original_image_frame0354.jpg', img_origin.reshape(80, 80))
     for i in range(len(img_integrad)):
         if i < 10:
-            imsave('results/atari/integrated_grad_bit0' + str(i) + '_frame0354.jpg', img_integrad[i].reshape(80, 80))
-            imsave('results/atari/integrated_grad_overlay_bit0' + str(i) + '_frame0354.jpg', img_integrad_overlay[i].reshape(80, 80))
+            imsave('results/atari/integrated_grad_bit0' + str(i) + '_bv' + str(int(bit_values[0][i].data)) + '_frame0354.jpg', img_integrad[i].reshape(80, 80))
+            imsave('results/atari/integrated_grad_overlay_bit0' + str(i) + '_bv' + str(int(bit_values[0][i].data)) + '_frame0354.jpg', img_integrad_overlay[i].reshape(80, 80))
         else:
-            imsave('results/atari/integrated_grad_bit' + str(i) + '_frame0354.jpg', img_integrad[i].reshape(80, 80))
-            imsave('results/atari/integrated_grad_overlay_bit' + str(i) + '_frame0354.jpg', img_integrad_overlay[i].reshape(80, 80))
+            imsave('results/atari/integrated_grad_bit' + str(i) + '_bv' + str(int(bit_values[0][i].data)) + '_frame0354.jpg', img_integrad[i].reshape(80, 80))
+            imsave('results/atari/integrated_grad_overlay_bit' + str(i) + '_bv' + str(int(bit_values[0][i].data)) + '_frame0354.jpg', img_integrad_overlay[i].reshape(80, 80))
 
