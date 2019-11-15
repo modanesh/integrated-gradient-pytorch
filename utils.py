@@ -2,36 +2,46 @@ import torch
 import torch.nn.functional as F
 import cv2
 import numpy as np
+import torch.nn as nn
+# from scipy.misc import imshow, imsave
+from matplotlib.pyplot import imshow,imsave
 
-def calculate_outputs_and_gradients(inputs, model, target_label_idx, cuda=False):
+
+# def calculate_outputs_and_gradients(inputs, model, target_label_idx, cuda=False):
+def calculate_outputs(input_img, model, cuda=False):
+    input = pre_processing(input_img, cuda)
+    output_c, output_x = model(input)
+    return output_x
+
+
+def calculate_outputs_and_gradients_steps(inputs, model, original_image_x, cuda=False):
     # do the pre-processing
-    predict_idx = None
     gradients = []
-    for input in inputs:
-        input = pre_processing(input, cuda)
-        output = model(input)
-        output = F.softmax(output, dim=1)
-        if target_label_idx is None:
-            target_label_idx = torch.argmax(output, 1).item()
-        index = np.ones((output.size()[0], 1)) * target_label_idx
-        index = torch.tensor(index, dtype=torch.int64)
-        if cuda:
-            index = index.cuda()
-        output = output.gather(1, index)
-        # clear grad
-        model.zero_grad()
-        output.backward()
-        gradient = input.grad.detach().cpu().numpy()[0]
-        gradients.append(gradient)
+    for i in range(len(inputs)):
+        if i < 10:
+            imsave('results/atari/noise_image_step0' + str(i) +'_frame0354.jpg', inputs[i].reshape(80, 80), vmin=0, vmax=1)
+        else:
+            imsave('results/atari/noise_image_step' + str(i) + '_frame0354.jpg', inputs[i].reshape(80, 80), vmin=0, vmax=1)
+        bits_gradients = []
+        input = pre_processing(inputs[i], cuda)
+        output_c, output_x = model(input)
+        for i in range(len(output_x[0])):
+            model.zero_grad()
+            loss = nn.MSELoss()(output_x[0][i], original_image_x[0][i])
+            loss.backward(retain_graph=True)
+            gradient = input.grad.cpu().data.numpy()[0].tolist()
+            bits_gradients.append(gradient)
+            input.grad.data.fill_(0)
+        gradients.append(bits_gradients)
     gradients = np.array(gradients)
-    return gradients, target_label_idx
+    assert gradients[0][0].shape == inputs[0].shape
+    return gradients
+
 
 def pre_processing(obs, cuda):
-    mean = np.array([0.485, 0.456, 0.406]).reshape([1, 1, 3])
-    std = np.array([0.229, 0.224, 0.225]).reshape([1, 1, 3])
-    obs = obs / 255
+    mean = np.array([0.485]).reshape([1, 1, 1])
+    std = np.array([0.229]).reshape([1, 1, 1])
     obs = (obs - mean) / std
-    obs = np.transpose(obs, (2, 0, 1))
     obs = np.expand_dims(obs, 0)
     obs = np.array(obs)
     if cuda:
@@ -42,12 +52,13 @@ def pre_processing(obs, cuda):
     return obs_tensor
 
 # generate the entire images
-def generate_entrie_images(img_origin, img_grad, img_grad_overlay, img_integrad, img_integrad_overlay):
-    blank = np.ones((img_grad.shape[0], 10, 3), dtype=np.uint8) * 255
-    blank_hor = np.ones((10, 20 + img_grad.shape[0] * 3, 3), dtype=np.uint8) * 255
-    upper = np.concatenate([img_origin[:, :, (2, 1, 0)], blank, img_grad_overlay, blank, img_grad], 1)
-    down = np.concatenate([img_origin[:, :, (2, 1, 0)], blank, img_integrad_overlay, blank, img_integrad], 1)
-    total = np.concatenate([upper, blank_hor, down], 0)
-    total = cv2.resize(total, (550, 364))
+def generate_entrie_images(img_origin, img_integrad, img_integrad_overlay):
+    imsave('results/atari/original_image_frame0354.jpg', img_origin.reshape(80, 80))
+    for i in range(len(img_integrad)):
+        if i < 10:
+            imsave('results/atari/integrated_grad_bit0' + str(i) + '_frame0354.jpg', img_integrad[i].reshape(80, 80))
+            imsave('results/atari/integrated_grad_overlay_bit0' + str(i) + '_frame0354.jpg', img_integrad_overlay[i].reshape(80, 80))
+        else:
+            imsave('results/atari/integrated_grad_bit' + str(i) + '_frame0354.jpg', img_integrad[i].reshape(80, 80))
+            imsave('results/atari/integrated_grad_overlay_bit' + str(i) + '_frame0354.jpg', img_integrad_overlay[i].reshape(80, 80))
 
-    return total
